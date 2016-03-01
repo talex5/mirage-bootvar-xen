@@ -21,34 +21,8 @@ type t = { cmd_line : string;
 
 exception Parameter_not_found of string
 
-let get_cmd_line () =
-  (* Originally based on mirage-skeleton/xen/static_website+ip code for reading
-   * boot parameters, but we now read from xenstore for better ARM
-   * compatibility.  *)
-  OS.Xs.make () >>= fun client ->
-  Lwt.catch (fun () ->
-    OS.Xs.(immediate client (fun x -> read x "vm")) >>= fun vm ->
-    OS.Xs.(immediate client (fun x -> read x (vm^"/image/cmdline"))))
-    (fun _ ->
-       let cmdline = (OS.Start_info.get ()).OS.Start_info.cmd_line in
-       Lwt.return cmdline)
-
 let create () = 
-  get_cmd_line () >>= fun cmd_line ->
-  let entries = Re_str.(split (regexp_string " ") cmd_line) in
-  let parameters =
-    List.map (fun x ->
-        match Re_str.(split (regexp_string "=") x) with 
-        | [a;b] -> (a,b)
-        | _ -> raise (Failure (Printf.sprintf "Malformed boot parameter %S" x))
-      ) entries
-  in
-  let t = 
-    try 
-      `Ok { cmd_line; parameters}
-    with 
-      Failure msg -> `Error msg
-  in
+  let t = `Ok { cmd_line = ""; parameters = []} in
   return t
 
 let get_exn t parameter = 
